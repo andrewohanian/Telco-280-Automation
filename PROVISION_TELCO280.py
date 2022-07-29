@@ -23,9 +23,8 @@ with open(f'{secrets.path_to_config_parameters_file}/CONFIG_PARAMETERS.json', 'r
     logging.info(f'Running for config_parameters: {config_parameters}')
 
 #Get Mgmt IP from inventory number
-mgmt_ip = '10.254.1.10'
 logging.info(f'Looking up mgmt IP for inventory number {config_parameters["INVENTORY_NUMBER"]}')
-#mgmt_ip = get_mgmt_ip_from_inventory_number(config_parameters["INVENTORY_NUMBER"])
+mgmt_ip = get_mgmt_ip_from_inventory_number(config_parameters["INVENTORY_NUMBER"])
 logging.info(f'Found mgmt IP from lookup up inventory number in IPAM: {mgmt_ip}')
 mgmt_default_gateway_ip = str(ipaddress.ip_address(mgmt_ip) -1)
 logging.info(f'Calculated mgmt default gateway IP: {mgmt_default_gateway_ip}')
@@ -68,8 +67,7 @@ if response != 0:
 print(f'Ping to {mgmt_ip} successful. Configuring Telco via SSH...\n')
 logging.info(f'Ping to {mgmt_ip} successful')
 
-hostname = 'OSF-SOMM-PEO-T'
-#hostname = 'STRATUS-{config_parameters["INVENTORY_NUMBER"]}'
+hostname = f'STRATUS-{config_parameters["INVENTORY_NUMBER"]}'
 logging.info(f'Determined that the Telco hostname should be: {hostname}')
 
 try:
@@ -128,7 +126,13 @@ config = generate_280_config(config_parameters)
 logging.info(f'Generated config: {config}')
 
 #Apply config
-## Need Telco at home to do this ##
+new_hostname = config_parameters["HOSTNAME"]
+child.sendline(config)
+child.expect(f'{new_hostname}#', 20)
+logging.info('Successfully applied config')
+#child.sendline('wr mem')
+#child.expect(f'{new_hostname}#', 20)
+#logging.info('Saved config to device')
 
 #Change Mgmt IP descriptions in IPAM to <PON> -- <Company> -- <Address> format
 new_ipam_description = ''

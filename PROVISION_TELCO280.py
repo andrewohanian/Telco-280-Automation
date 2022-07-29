@@ -34,6 +34,10 @@ logging.info(f'Calculated mgmt default gateway IP: {mgmt_default_gateway_ip}')
 core_port_details = find_core_port_from_pon(config_parameters)
 logging.info(f'Found core port details using PON: {core_port_details}')
 
+if core_port_details == None:
+    print('Could not find the core port from the given PONs. Exiting script...')
+    sys.exit(1)
+
 config_parameters['SNMP_LOCATION'] = core_port_details['router_location']
 logging.info(f'Found SNMP location from core port details: {config_parameters["SNMP_LOCATION"]}')
 
@@ -139,3 +143,5 @@ for service in config_parameters['SERVICES']:
 new_ipam_description = new_ipam_description.strip()
 logging.info(f'New IPAM description: {new_ipam_description}')
 #change_mgmt_ip_descriptions(inventory_number, new_ipam_description)
+
+#Email engineering

@@ -10,7 +10,8 @@ def get_all_interfaces_from_corenms_matching_string(search_string):
     If there are no ports found, returns None.
     """
     url = f"{secrets.nms_base_url}/api/v0/ports/search/ifalias/{search_string}"
-    headers = {'X-Auth-Token': secrets.ipam_authentication}
+    headers = {'X-Auth-Token': secrets.nms_auth_token}
+
     response = requests.request("GET", url, headers=headers)
 
     try:
@@ -27,7 +28,7 @@ def get_port_details(port_id):
     This is returned as a dict.
     """
     url = f"{secrets.nms_base_url}/api/v0/ports/{port_id}"
-    headers = {'X-Auth-Token': secrets.nms_base_token}
+    headers = {'X-Auth-Token': secrets.nms_auth_token}
     response = requests.request("GET", url, headers=headers)
 
     #Populate port variables

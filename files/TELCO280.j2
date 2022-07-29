@@ -1,3 +1,4 @@
+conf t
 hostname {{ HOSTNAME }}
 snmp-server location {{ SNMP_LOCATION }}
 
@@ -41,12 +42,19 @@ name {{ SERVICE.TYPE }} {{ SERVICE.PON }}
 default vlan {{ SERVICE.VLAN }}
 qos tos-to-cos
 qos tx shaper rate {{ SERVICE.DOWNLOAD_BANDWIDTH }}m
-{% if SHAPER_ON_UPLINK == 'true' and SERVICE.TYPE not in ['SIP'] %}
+{% if SHAPER_ON_UPLINK == 'false' and SERVICE.TYPE not in ['SIP'] %}
 qos rx rate-limit {{ SERVICE.UPLOAD_BANDWIDTH }}m 1m
 {% endif %}
 exit
 
 {% if SERVICE.TYPE in ['EVPL', 'EPL', 'VPLS'] %}
+tls enable
+tls {{ SERVICE.TYPE }} {{ SERVICE.VLAN }}
+encapsulate qinq
+sdp {{ UPLINK }} s-vlan {{ SERVICE.VLAN }}
+sap {{ SERVICE.LAN_INTERFACE }}
+exit
+
 interface {{ SERVICE.LAN_INTERFACE }}
 tls user
 packet-size-limit 10240
@@ -56,12 +64,7 @@ interface {{ UPLINK }}
 tls uplink
 packet-size-limit 10240
 exit
-tls enable
-tls {{ SERVICE.TYPE }} {{ SERVICE.VLAN }}
-encapsulate qinq
-sdp {{ UPLINK }} s-vlan {{ SERVICE.VLAN }}
-sap {{ SERVICE.LAN_INTERFACE }}
-exit
-{% endif %}
 
+{% endif %}
 {% endfor %}
+end

@@ -62,6 +62,7 @@ def generate_280_config(config_parameters):
         telco280_template = Template(telco280_template.read())
 
     #Render j2 template with the config parameters
+    logging.info(f'Config parameters prior to rendering template: {config_parameters}')
     telco280_config = telco280_template.render(config_parameters)
     
     #Return the config with no blank lines

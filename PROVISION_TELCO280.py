@@ -10,6 +10,7 @@ from get_and_reserve_inventory_mgmt_ip_from_ipam import change_mgmt_ip_descripti
 from generate_config import generate_280_config
 from configure_core_mgmt_ip import find_core_port_from_pon
 from configure_core_mgmt_ip import configure_router
+from send_email import send_completed_email
 import secrets
 
 logging.basicConfig(
@@ -149,3 +150,4 @@ logging.info(f'New IPAM description: {new_ipam_description}')
 #change_mgmt_ip_descriptions(inventory_number, new_ipam_description)
 
 #Email engineering
+send_completed_email(core_port_details['router_hostname'], core_port_details['port_name'], new_hostname)

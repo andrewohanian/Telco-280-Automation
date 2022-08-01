@@ -10,7 +10,7 @@ def generate_280_config(config_parameters):
     """
     service_type_to_vlan_id = {
         'DIA': '10',
-        'MPLS_PASSTHROUGH': '20',
+        'MPLS': '20',
         'SIP': '30',
         'EPL': '40',
         'EVPL': '40',

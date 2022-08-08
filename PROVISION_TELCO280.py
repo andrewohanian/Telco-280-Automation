@@ -57,9 +57,9 @@ if core_port_details['configured'] == False:
 #Attempt to ping mgmt IP
 logging.info(f'Pinging {mgmt_ip}')
 #Ping twice first, to allow for ARP resolution
-response = os.system(f'ping -c 2 {mgmt_ip}')
+response = os.system(f'ping -c 2 {mgmt_ip} > /dev/null')
 time.sleep(5)
-response = os.system(f'ping -c 1 {mgmt_ip}')
+response = os.system(f'ping -c 1 {mgmt_ip} > /dev/null')
 if response != 0:
     print(f'Could not ping the Telco at {mgmt_ip}. Aborting script. Please troubleshoot connectivity and then try again.')
     logging.critical(f'Ping failed with response {response}. Exiting script')
@@ -108,12 +108,12 @@ logging.info(f'CAM table output: {output}')
 
 if '1/1/1' in output:
     config_parameters['UPLINK'] = '1/1/1'
-    print('Found uplink: 1/1/1')
+    print('Found uplink: 1/1/1\n')
     logging.info(f'Found uplink: 1/1/1')
 
 elif '1/3/1' in output:
     config_parameters['UPLINK'] = '1/3/1'
-    print('Found uplink: 1/3/1')
+    print('Found uplink: 1/3/1\n')
     logging.info(f'Found uplink: 1/3/1')
 
 else:
@@ -134,6 +134,7 @@ logging.info('Successfully applied config')
 #child.sendline('wr mem')
 #child.expect(f'{new_hostname}#', 20)
 #logging.info('Saved config to device')
+print('Config successfully applied and saved.\n')
 
 #Change Mgmt IP descriptions in IPAM to <PON> -- <Company> -- <Address> format
 new_ipam_description = ''
@@ -147,7 +148,10 @@ for service in config_parameters['SERVICES']:
 
 new_ipam_description = new_ipam_description.strip()
 logging.info(f'New IPAM description: {new_ipam_description}')
-#change_mgmt_ip_descriptions(inventory_number, new_ipam_description)
+#change_mgmt_ip_descriptions(config_parameters["INVENTORY_NUMBER"], new_ipam_description)
+#print('IPAM successfully updated.\n')
 
 #Email engineering
-send_completed_email(core_port_details['router_hostname'], core_port_details['port_name'], new_hostname)
+send_completed_email(core_port_details['router_hostname'].split(".")[0].upper(), core_port_details['port_name'], new_hostname)
+
+print('Complete.')

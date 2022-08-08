@@ -1,5 +1,6 @@
 conf t
 hostname {{ HOSTNAME }}
+snmp-server system-name {{ HOSTNAME }}
 snmp-server location {{ SNMP_LOCATION }}
 
 vlan

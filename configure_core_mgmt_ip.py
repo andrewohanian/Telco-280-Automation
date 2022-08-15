@@ -2,6 +2,7 @@ import paramiko
 import json
 import requests
 import secrets
+import re
 
 def get_all_interfaces_from_corenms_matching_string(search_string):
     """
@@ -18,6 +19,21 @@ def get_all_interfaces_from_corenms_matching_string(search_string):
         return response.json()['ports']
     except:
         return None
+
+
+def get_new_port_description(port_description):
+    if 'MGMT' in port_description:
+        new_description = re.findall('.*MGMT', port_description)[0]
+    else:
+        new_description = re.findall('\d+\.\d+\.\d+\.\d+', port_description)[0]
+
+    return new_description
+
+
+def get_intermediate_port_description(port_description):
+    new_description = re.findall('.*\d+\.\d+\.\d+\.\d+', port_description)[0]
+
+    return new_description
 
 
 def get_port_details(port_id):
@@ -120,7 +136,7 @@ def find_core_port_from_pon(config_parameters):
         return port_details
 
 
-def configure_router(router_mgmt_ip, router_os, port_name, pon, router_hostname, mgmt_default_gateway_ip):
+def configure_router(router_mgmt_ip, router_os, port_name, intermediate_description, router_hostname, mgmt_default_gateway_ip):
     """
     Configures the router port with the correct Mgmt default GW /30 IP address, changes the port description from
     <PON> (PRESTAGED) to just <PON>, and saves the config (commit or wr mem).
@@ -144,7 +160,7 @@ def configure_router(router_mgmt_ip, router_os, port_name, pon, router_hostname,
     ssh_connection.send_command("conf t")
     ssh_connection.send_command(f"interface {port_name}")
     ssh_connection.send_command(f"ip address {mgmt_default_gateway_ip} 255.255.255.252")
-    ssh_connection.send_command(f"description {pon}")
+    ssh_connection.send_command(f"description {intermediate_description}")
     ssh_connection.send_command(f"no shut")
 
     if router_os == 'iosxe':
@@ -158,4 +174,45 @@ def configure_router(router_mgmt_ip, router_os, port_name, pon, router_hostname,
     response = ssh_connection.send_command(f"show run int {port_name}")
 
     print(f"Configured interface {port_name} on {router_hostname}")
-    print(response.result)
+    print(response.result + '\n')
+
+
+def configure_core_interface_description_and_show_run_interface(router_mgmt_ip, router_os, port_name, new_description):
+    """
+    Does show run of the interface
+    """
+    router = {
+        "host": router_mgmt_ip,
+        "auth_username": secrets.router_username,
+        "auth_password": secrets.router_password,
+        "auth_strict_key": False
+    }
+
+    if router_os == 'iosxe':
+        from scrapli.driver.core import IOSXEDriver
+        ssh_connection = IOSXEDriver(**router)
+
+    if router_os == 'iosxr':
+        from scrapli.driver.core import IOSXRDriver
+        ssh_connection = IOSXRDriver(**router)
+
+    ssh_connection.open()
+    ssh_connection.send_command("conf t")
+    ssh_connection.send_command(f"interface {port_name}")
+    ssh_connection.send_command(f"description {new_description}")
+
+    if router_os == 'iosxe':
+        ssh_connection.send_command('end')
+        ssh_connection.send_command('write mem')
+
+    if router_os == 'iosxr':
+        ssh_connection.send_command('commit')
+        ssh_connection.send_command('end')
+    
+    response = ssh_connection.send_command(f"show run int {port_name}")
+    
+    show_run_output = response.result
+
+    show_run_output = re.findall('int.*\n.*description.*', show_run_output)[0]
+    
+    return show_run_output

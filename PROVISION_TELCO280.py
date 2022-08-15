@@ -10,6 +10,9 @@ from get_and_reserve_inventory_mgmt_ip_from_ipam import change_mgmt_ip_descripti
 from generate_config import generate_280_config
 from configure_core_mgmt_ip import find_core_port_from_pon
 from configure_core_mgmt_ip import configure_router
+from configure_core_mgmt_ip import get_intermediate_port_description
+from configure_core_mgmt_ip import get_new_port_description
+from configure_core_mgmt_ip import configure_core_interface_description_and_show_run_interface
 from send_email import send_completed_email
 import secrets
 
@@ -47,10 +50,12 @@ if core_port_details['configured'] == True:
 
 if core_port_details['configured'] == False:
     logging.info(f'Configuring the core router interface...')
+    intermediate_description = get_intermediate_port_description(core_port_details["port_description"])
+
     configure_router(router_mgmt_ip = core_port_details['router_mgmt_ip'], 
                     router_os       = core_port_details['router_os'], 
                     port_name       = core_port_details['port_name'], 
-                    pon             = core_port_details['pon'], 
+                    intermediate_description = intermediate_description, 
                     router_hostname = core_port_details['router_hostname'], 
                     mgmt_default_gateway_ip = mgmt_default_gateway_ip)
 
@@ -131,9 +136,9 @@ new_hostname = config_parameters["HOSTNAME"]
 child.sendline(config)
 child.expect(f'{new_hostname}#', 20)
 logging.info('Successfully applied config')
-#child.sendline('wr mem')
-#child.expect(f'{new_hostname}#', 20)
-#logging.info('Saved config to device')
+child.sendline('wr mem')
+child.expect(f'{new_hostname}#', 20)
+logging.info('Saved config to device')
 print('Config successfully applied and saved.\n')
 
 #Change Mgmt IP descriptions in IPAM to <PON> -- <Company> -- <Address> format
@@ -151,7 +156,23 @@ logging.info(f'New IPAM description: {new_ipam_description}')
 #change_mgmt_ip_descriptions(config_parameters["INVENTORY_NUMBER"], new_ipam_description)
 #print('IPAM successfully updated.\n')
 
+#Configure the final description and get show run int output
+logging.info(f'Configuring the core router interface with final description...')
+new_description = get_new_port_description(core_port_details["port_description"])
+
+show_run_output = configure_core_interface_description_and_show_run_interface(
+                    router_mgmt_ip = core_port_details['router_mgmt_ip'], 
+                    router_os       = core_port_details['router_os'], 
+                    port_name       = core_port_details['port_name'],
+                    new_description = new_description
+                    )
+
 #Email engineering
-send_completed_email(core_port_details['router_hostname'].split(".")[0].upper(), core_port_details['port_name'], new_hostname)
+send_completed_email(
+    router_hostname = core_port_details['router_hostname'].split(".")[0].upper(), 
+    router_port = core_port_details['port_name'], 
+    show_run_output = show_run_output,
+    telco_hostname= new_hostname
+    )
 
 print('Complete.')
